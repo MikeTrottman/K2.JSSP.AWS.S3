@@ -1,4 +1,26 @@
+/*
+ * AWS S3 integration for K2 using JSSP
+ * Special thanks to Kevinsee15 - https://github.com/kevinsee15 
+ */
+
 import '@k2oss/k2-broker-core';
+
+const AWSS3Bucket = "AWSS3Bucket";
+
+const Key = "Key";
+const LastModified = "LastModified";
+const ETag = "ETag";
+const Size = "Size";
+const StorageClass = "StorageClass";
+const RequestStatus = "status";
+
+const GetBucketContents = "GetBucketContents";
+
+const AWSS3File = "AWSS3File";
+
+const CreateFile = "CreateFile";
+
+const DeleteFile = "DeleteFile";
 
 metadata = {
     systemName: "AWS-S3-Bucket",
@@ -35,33 +57,33 @@ metadata = {
 ondescribe = async function({configuration}): Promise<void> {
     postSchema({
         objects: {
-            "AWS-S3-Bucket": {
+            [AWSS3Bucket]: {
                 displayName: "AWS S3 Bucket",
                 description: "Get S3 Bucket Content List of Objects",
                 properties: {
-                    "Key": {
+                    [Key]: {
                         displayName: "Key",
                         type: "string",
                     },
-                    "LastModified": {
+                    [LastModified]: {
                         displayName: "Last Modified",
                         type: "dateTime"
                     },
-                    "ETag": {
+                    [ETag]: {
                         displayName: "Etag",
                         type: "string"
                     },
-                    "Size": {
+                    [Size]: {
                         displayName: "Size",
                         type: "number"
                     },
-                    "StorageClass": {
+                    [StorageClass]: {
                         displayName: "Storage Class",
                         type: "number"
                     }
                 },
                 methods: {
-                    "getBucketContents": {
+                    [GetBucketContents]: {
                         displayName: "Get Bucket Contents",
                         type: "list",
                         parameters: {
@@ -69,11 +91,12 @@ ondescribe = async function({configuration}): Promise<void> {
                             "max-keys" : { displayName: "Max Keys", description: "Number of Records to List. The Take.", type: "number"},
                             "start-after" : { displayName: "Start After", description: "Key to Start After for Pagination. The Skip.", type: "string"}
                         },
+                        inputs: ["prefix", "max-keys", "start-after"],
                         outputs: [ "Key", "LastModified", "ETag", "Size", "StorageClass" ]
                     }
                 }
             },
-            "AWS-S3-File": {
+            [AWSS3File]: {
                 displayName: "AWS S3 File",
                 description: "Add or Delete AWS S3 Files",
                 properties: {
@@ -83,20 +106,24 @@ ondescribe = async function({configuration}): Promise<void> {
                     }
                 },
                 methods: {
-                    "create": {
+                    [CreateFile]: {
                         displayName: "Persist a file to S3",
-                        type: "read",
+                        type: "execute",
                         parameters: {
-                            "Key" : { displayName: "Key", description: "File Path, Name and Extension", type: "string"} 
+                            "Key" : { displayName: "Key", description: "File Path, Name and Extension (Ex: ParentDirectory/Directory/DocumentName.ext)", type: "string"} 
                         },
+                        inputs: ["Key", "File"],
+                        requiredInputs: ["Key", "File"],
                         outputs: ["Key"]
                     },
-                    "delete": {
+                    [DeleteFile]: {
                         displayName: "Remove a file from S3",
                         type: "delete",
                         parameters: {
-                            "Key" : { displayName: "Key", description: "File Path, Name and Extension", type: "string"} 
+                            "Key" : { displayName: "Key", description: "File Path, Name and Extension (Ex: ParentDirectory/Directory/DocumentName.ext)", type: "string"} 
                         },
+                        inputs: ["Key"],
+                        requiredInputs: ["Key"],
                         outputs: ["Key"]
                     }
                 }
@@ -108,16 +135,16 @@ ondescribe = async function({configuration}): Promise<void> {
 onexecute = async function({objectName, methodName, parameters, properties, configuration, schema}): Promise<void> {
     switch (objectName)
     {
-        case "AWS-S3-Bucket": await onexecuteBucket(methodName, parameters); break;
-        case "AWS-S3-File": await onexecuteFile(methodName, properties, parameters); break;
+        case AWSS3Bucket: await onexecuteBucket(methodName, properties, parameters); break;
+        case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
         default: throw new Error("The object " + objectName + " is not supported.");
     }
 }
 
-async function onexecuteBucket(methodName: string, properties: SingleRecord): Promise<void> {
+async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
     switch (methodName)
     {
-        case "getBucketContents": await onexecuteGetBucketContents(properties); break;
+        case GetBucketContents: await onexecuteGetBucketContents(properties, parameters); break;
         default: throw new Error("The method " + methodName + " is not supported.");
     }
 }
@@ -131,33 +158,29 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
     }
 }
 
-function onexecuteGetBucketContents(properties: SingleRecord): Promise<void> {
+function onexecuteGetBucketContents(properties: SingleRecord, parameters: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) =>
     {
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            try {
-                if (xhr.readyState !== 4) return;
-                if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
+        var parameterData : {[key: string]: string} = {
+            "max-keys": <string> parameters["max-keys"],
+            "prefix": <string> parameters["prefix"],
+            "start-after": <string> parameters["start-after"],
+        };
 
-                var obj = JSON.parse(xhr.responseText);
-                postResult({
-                    "Key": obj.Key,
-                    "LastModified": obj.LastModified,
-                    "ETag": obj.ETag,
-                    "Size": obj.Size,
-                    "StorageClass": obj.StorageClass
-                });
-                resolve();
-            } catch (e) {
-                reject(e);
-            }
+        var propertyData : {[key: string]: string} = {
+            "Key": <string> properties.Key,
+            "LastModified": <string> properties.LastModified,
+            "ETag": <string> properties.ETag,
+            "Size": <string> properties.Size,
+            "StorageClass": <string> properties.StorageClass
         };
         
-        //if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
-        xhr.open("GET", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
-        xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
-        xhr.send();
+        _executeXHRRequest(_buildURL(parameterData), propertyData, "GET", function(responseObj) {
+            postResult({
+                [RequestStatus]: responseObj["status"]
+            });
+            resolve();
+        });
     });
 }
 
@@ -203,4 +226,59 @@ function onexecuteDeleteFile(properties: SingleRecord, parameters): Promise<void
         xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
         xhr.send();
     });
+}
+
+// Execute XHR Request Helper
+function _executeXHRRequest(url: string, propertiesData: {[key: string]: string}, requestType: string, cb) {
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4)
+            return;
+        if (xhr.status == 201 || xhr.status == 200) {
+            var obj = JSON.parse(xhr.responseText);
+            if (typeof cb === 'function')
+                cb(obj);
+        }
+        else if (xhr.status == 400 || xhr.status == 404) {
+            var obj = JSON.parse(xhr.responseText);
+            throw new Error(obj.code + ": " + obj.message + ". Data: " + propertiesData);
+        }
+        else {
+            postResult({
+            });
+            var obj = JSON.parse(xhr.responseText);
+            throw new Error(obj.code + ": " + obj.message + ". Data: " + propertiesData);
+        }
+    };
+    
+    var body = _encodeQueryData(propertiesData);
+
+    xhr.open(requestType.toUpperCase(), url);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.send(body);
+}
+
+// Encoding Query Data Helper
+function _encodeQueryData(data: {[key: string]: string}) {
+    const ret = [];
+    for(let key in data){
+        let value = data[key];
+        ret.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+    }
+    return ret.join('&');
+}
+
+// Build URL Helper
+function _buildURL(data: {[key: string]: string}){
+
+    let constructedURL = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
+
+    for(let key in data){
+        let value = data[key];
+        constructedURL += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+    }
+    return constructedURL;
 }
