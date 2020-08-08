@@ -154,7 +154,7 @@ function onexecuteGetBucketContents(properties: SingleRecord): Promise<void> {
             }
         };
         
-        if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
+        //if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
         xhr.open("GET", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
         xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
         xhr.send();
