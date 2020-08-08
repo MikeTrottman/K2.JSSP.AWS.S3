@@ -277,8 +277,10 @@ function _buildURL(data: {[key: string]: string}){
     let constructedURL = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
 
     for(let key in data){
-        let value = data[key];
-        constructedURL += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+        if(data[key]) {
+            let value = data[key];
+            constructedURL += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(value);
+        }
     }
     return constructedURL;
 }
