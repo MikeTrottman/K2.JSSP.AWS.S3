@@ -36,7 +36,7 @@ ondescribe = async function({configuration}): Promise<void> {
     postSchema({
         objects: {
             "AWS-S3-Bucket": {
-                displayName: "AWS S3 Bucket Contents",
+                displayName: "AWS S3 Bucket",
                 description: "Get S3 Bucket Content List of Objects",
                 properties: {
                     "Key": {
@@ -74,8 +74,8 @@ ondescribe = async function({configuration}): Promise<void> {
                 }
             },
             "AWS-S3-File": {
-                displayName: "AWS S3 Bucket Contents",
-                description: "Get S3 Bucket Content List of Objects",
+                displayName: "AWS S3 File",
+                description: "Add or Delete AWS S3 Files",
                 properties: {
                     "Key": {
                         displayName: "Key",
@@ -108,16 +108,16 @@ ondescribe = async function({configuration}): Promise<void> {
 onexecute = async function({objectName, methodName, parameters, properties, configuration, schema}): Promise<void> {
     switch (objectName)
     {
-        case "AWS-S3-Bucket": await onexecuteBucket(methodName, properties, parameters); break;
+        case "AWS-S3-Bucket": await onexecuteBucket(methodName, parameters); break;
         case "AWS-S3-File": await onexecuteFile(methodName, properties, parameters); break;
         default: throw new Error("The object " + objectName + " is not supported.");
     }
 }
 
-async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
+async function onexecuteBucket(methodName: string, properties: SingleRecord): Promise<void> {
     switch (methodName)
     {
-        case "getBucketContents": await onexecuteGetBucketContents(properties, parameters); break;
+        case "getBucketContents": await onexecuteGetBucketContents(properties); break;
         default: throw new Error("The method " + methodName + " is not supported.");
     }
 }
@@ -131,7 +131,7 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
     }
 }
 
-function onexecuteGetBucketContents(properties: SingleRecord, parameters): Promise<void> {
+function onexecuteGetBucketContents(properties: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) =>
     {
         var xhr = new XMLHttpRequest();
