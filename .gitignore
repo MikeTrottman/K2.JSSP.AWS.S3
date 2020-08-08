@@ -61,4 +61,4 @@ typings/
 .vs
 
 # Build Results
-dist/
+#dist/
