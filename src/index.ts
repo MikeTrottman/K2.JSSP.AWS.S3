@@ -242,7 +242,7 @@ function _executeXHRRequest(url: string, propertiesData: {[key: string]: string}
         }
         else if (xhr.status == 400 || xhr.status == 404) {
             var obj = JSON.parse(xhr.responseText);
-            throw new Error(obj.code + ": " + obj.message + ". Data: " + propertiesData);
+            throw new Error(obj.code + ": " + obj.message + ". Data: " + propertiesData + " | URL: " + url);
         }
         else {
             postResult({
