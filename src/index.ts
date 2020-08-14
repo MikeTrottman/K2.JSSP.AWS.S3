@@ -135,98 +135,75 @@ ondescribe = async function({configuration}): Promise<void> {
 onexecute = async function({objectName, methodName, parameters, properties, configuration, schema}): Promise<void> {
     switch (objectName)
     {
-        case AWSS3Bucket: await onexecuteBucket(methodName, properties, parameters); break;
-        case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
+        case AWSS3Bucket: await onexecuteBucket(methodName, properties, parameters, configuration); break;
+        // case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
         default: throw new Error("The object " + objectName + " is not supported.");
     }
 }
 
-async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
+async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord, configuration: SingleRecord): Promise<void> {
     switch (methodName)
     {
-        case GetBucketContents: await onexecuteGetBucketContents(properties, parameters); break;
+        case GetBucketContents: await onexecuteGetBucketContents(parameters, properties, configuration); break;
         default: throw new Error("The method " + methodName + " is not supported.");
     }
 }
 
-async function onexecuteFile(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
-    switch (methodName)
-    {
-        case "create": await onexecuteCreateFile(properties, parameters); break;
-        case "delete": await onexecuteDeleteFile(properties, parameters); break;
-        default: throw new Error("The method " + methodName + " is not supported.");
-    }
-}
-
-function onexecuteGetBucketContents(properties: SingleRecord, parameters: SingleRecord): Promise<void> {
-    return new Promise<void>((resolve, reject) =>
-    {
-        var parameterData : {[key: string]: string} = {
-            "max-keys": <string> parameters["max-keys"],
-            "prefix": <string> parameters["prefix"],
-            "start-after": <string> parameters["start-after"],
-        };
-
-        var propertyData : {[key: string]: string} = {
-            "Key": <string> properties.Key,
-            "LastModified": <string> properties.LastModified,
-            "ETag": <string> properties.ETag,
-            "Size": <string> properties.Size,
-            "StorageClass": <string> properties.StorageClass
-        };
-        
-        _executeXHRRequest(_buildURL(parameterData), propertyData, "GET", function(responseObj) {
-            postResult({
-                [RequestStatus]: responseObj["status"]
-            });
-            resolve();
-        });
-    });
-}
-
-function onexecuteCreateFile(properties: SingleRecord, parameters): Promise<void> {
-    return new Promise<void>((resolve, reject) =>
-    {
+function onexecuteGetBucketContents(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
         var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             try {
-                postResult({
-                    "Key": parameters["Key"]
-                });
+                if (xhr.readyState !== 4) return;
+                if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
+
+                //console.log(xhr.responseText);
+                var obj = JSON.parse(xhr.responseText);
+                postResult(obj.map(x => {
+                    return {
+                        "max-keys": <string> parameters["max-keys"],
+                        "prefix": <string> parameters["prefix"],
+                        "start-after": <string> parameters["start-after"],
+                    }
+                }));
                 resolve();
             } catch (e) {
                 reject(e);
             }
         }
-        
-        if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
-        xhr.open("POST", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
-        xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
+
+        xhr.open("GET", urlValue);
         xhr.send();
     });
+
 }
 
-function onexecuteDeleteFile(properties: SingleRecord, parameters): Promise<void> {
-    return new Promise<void>((resolve, reject) =>
-    {
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            try {
-                postResult({
-                    "Key": parameters["Key"]
-                });
-                resolve();
-            } catch (e) {
-                reject(e);
-            }
-        }
+// function onexecuteGetBucketContents(properties: SingleRecord, parameters: SingleRecord): Promise<void> {
+//     return new Promise<void>((resolve, reject) =>
+//     {
+//         var parameterData : {[key: string]: string} = {
+//             "max-keys": <string> parameters["max-keys"],
+//             "prefix": <string> parameters["prefix"],
+//             "start-after": <string> parameters["start-after"],
+//         };
+
+//         var propertyData : {[key: string]: string} = {
+//             "Key": <string> properties.Key,
+//             "LastModified": <string> properties.LastModified,
+//             "ETag": <string> properties.ETag,
+//             "Size": <string> properties.Size,
+//             "StorageClass": <string> properties.StorageClass
+//         };
         
-        if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
-        xhr.open("DELETE", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
-        xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
-        xhr.send();
-    });
-}
+//         _executeXHRRequest(_buildURL(parameterData), propertyData, "GET", function(responseObj) {
+//             postResult({
+//                 [RequestStatus]: responseObj["status"]
+//             });
+//             resolve();
+//         });
+//     });
+// }
 
 // Execute XHR Request Helper
 function _executeXHRRequest(url: string, propertiesData: {[key: string]: string}, requestType: string, cb) {
@@ -284,3 +261,56 @@ function _buildURL(data: {[key: string]: string}){
     }
     return constructedURL;
 }
+
+// async function onexecuteFile(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
+//     switch (methodName)
+//     {
+//         case "create": await onexecuteCreateFile(properties, parameters); break;
+//         case "delete": await onexecuteDeleteFile(properties, parameters); break;
+//         default: throw new Error("The method " + methodName + " is not supported.");
+//     }
+// }
+
+// function onexecuteCreateFile(properties: SingleRecord, parameters): Promise<void> {
+//     return new Promise<void>((resolve, reject) =>
+//     {
+//         var xhr = new XMLHttpRequest();
+//         xhr.onreadystatechange = function() {
+//             try {
+//                 postResult({
+//                     "Key": parameters["Key"]
+//                 });
+//                 resolve();
+//             } catch (e) {
+//                 reject(e);
+//             }
+//         }
+        
+//         if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
+//         xhr.open("POST", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
+//         xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
+//         xhr.send();
+//     });
+// }
+
+// function onexecuteDeleteFile(properties: SingleRecord, parameters): Promise<void> {
+//     return new Promise<void>((resolve, reject) =>
+//     {
+//         var xhr = new XMLHttpRequest();
+//         xhr.onreadystatechange = function() {
+//             try {
+//                 postResult({
+//                     "Key": parameters["Key"]
+//                 });
+//                 resolve();
+//             } catch (e) {
+//                 reject(e);
+//             }
+//         }
+        
+//         if(typeof properties["Key"] !== "string") throw new Error("properties[\"Key\"] is not of type string");
+//         xhr.open("DELETE", 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys=' + encodeURIComponent(parameters['max-keys']) + '&prefix=' + encodeURIComponent(parameters['prefix']) + '&start-after=' + encodeURIComponent(parameters['start=after']) + encodeURIComponent(properties["Key"]));
+//         xhr.setRequestHeader('aws', 'aws s3 k2 jssp test');
+//         xhr.send();
+//     });
+// }
