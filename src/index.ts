@@ -84,7 +84,7 @@ ondescribe = async function({configuration}): Promise<void> {
 
 onexecute = async function({objectName, methodName, parameters, properties, configuration}): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
+        var urlValue = 'https://' + configuration.AWSBucketName + '.s3.' + configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             try {
