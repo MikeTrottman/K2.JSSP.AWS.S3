@@ -107,12 +107,10 @@ function onexecuteGetBucketContents(parameters: SingleRecord, properties: Single
             try {
                 if (xhr.readyState !== 4) return;
                 
-                if (xhr.status == 400 || xhr.status == 404) {
+                if (xhr.status !== 200) {
                     var obj = JSON.parse(xhr.responseText);
-                    throw new Error(obj.code + ": " + obj.message + " | URL: " + urlValue);
+                    throw new Error("Failed with status " + xhr.status + " | " + obj.code + ": " + obj.message + " | URL: " + urlValue);
                 }
-                
-                if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
                 //console.log(xhr.responseText);
                 var obj = JSON.parse(xhr.responseText);
