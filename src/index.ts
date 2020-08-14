@@ -1,51 +1,33 @@
 /*
  * AWS S3 integration for K2 using JSSP
- * Special thanks to Kevinsee15 - https://github.com/kevinsee15 
  */
 
 import '@k2oss/k2-broker-core';
 
-const AWSS3Bucket = "AWSS3Bucket";
-
-const Key = "Key";
-const LastModified = "LastModified";
-const ETag = "ETag";
-const Size = "Size";
-const StorageClass = "StorageClass";
-const RequestStatus = "status";
-
-const GetBucketContents = "GetBucketContents";
-
-const AWSS3File = "AWSS3File";
-
-const CreateFile = "CreateFile";
-
-const DeleteFile = "DeleteFile";
-
 metadata = {
-    systemName: "AWS-S3-Bucket",
-    displayName: "AWS S3 Bucket",
-    description: "Connect to your Amazon Web Services S3 Bucket.",
-    configuration: {
-        AWSRegion: {
+    "systemName": "AWS-S3",
+    "displayName": "AWS S3",
+    "description": "Connect to your Amazon Web Services S3 Bucket.",
+    "configuration": {
+        "AWSRegion": {
             displayName: "AWS Region",
             type: "string",
             value: "us-west-2",
             required: true
         },
-        AWSBucketName: {
+        "AWSBucketName": {
             displayName: "AWS Bucket Name",
             type: "string",
             value: "s3-bucket-name",
             required: true
         },
-        AWSAccessKey: {
+        "AWSAccessKey": {
             displayName: "AWS IAM User Access Key",
             type: "string",
             value: "IAM User Access Key",
             required: true
         },
-        AWSSecretKey: {
+        "AWSSecretKey": {
             displayName: "AWS IAM User Secret Key",
             type: "string",
             value: "IAM User Secret Key",
@@ -57,33 +39,33 @@ metadata = {
 ondescribe = async function({configuration}): Promise<void> {
     postSchema({
         objects: {
-            [AWSS3Bucket]: {
+            "AWSS3Bucket": {
                 displayName: "AWS S3 Bucket",
                 description: "Get S3 Bucket Content List of Objects",
                 properties: {
-                    [Key]: {
+                    "Key": {
                         displayName: "Key",
                         type: "string",
                     },
-                    [LastModified]: {
+                    "LastModified": {
                         displayName: "Last Modified",
                         type: "dateTime"
                     },
-                    [ETag]: {
+                    "ETag": {
                         displayName: "Etag",
                         type: "string"
                     },
-                    [Size]: {
+                    "Size": {
                         displayName: "Size",
                         type: "number"
                     },
-                    [StorageClass]: {
+                    "StorageClass": {
                         displayName: "Storage Class",
                         type: "number"
                     }
                 },
                 methods: {
-                    [GetBucketContents]: {
+                    "GetBucketContents": {
                         displayName: "Get Bucket Contents",
                         type: "list",
                         parameters: {
@@ -92,39 +74,7 @@ ondescribe = async function({configuration}): Promise<void> {
                             "start-after" : { displayName: "Start After", description: "Key to Start After for Pagination. The Skip.", type: "string"}
                         },
                         inputs: ["prefix", "max-keys", "start-after"],
-                        outputs: [ "Key", "LastModified", "ETag", "Size", "StorageClass" ]
-                    }
-                }
-            },
-            [AWSS3File]: {
-                displayName: "AWS S3 File",
-                description: "Add or Delete AWS S3 Files",
-                properties: {
-                    "Key": {
-                        displayName: "Key",
-                        type: "string",
-                    }
-                },
-                methods: {
-                    [CreateFile]: {
-                        displayName: "Persist a file to S3",
-                        type: "execute",
-                        parameters: {
-                            "Key" : { displayName: "Key", description: "File Path, Name and Extension (Ex: ParentDirectory/Directory/DocumentName.ext)", type: "string"} 
-                        },
-                        inputs: ["Key", "File"],
-                        requiredInputs: ["Key", "File"],
-                        outputs: ["Key"]
-                    },
-                    [DeleteFile]: {
-                        displayName: "Remove a file from S3",
-                        type: "delete",
-                        parameters: {
-                            "Key" : { displayName: "Key", description: "File Path, Name and Extension (Ex: ParentDirectory/Directory/DocumentName.ext)", type: "string"} 
-                        },
-                        inputs: ["Key"],
-                        requiredInputs: ["Key"],
-                        outputs: ["Key"]
+                        outputs: [ "key", "lastModified", "eTag", "size", "storageClass" ]
                     }
                 }
             }
@@ -132,10 +82,10 @@ ondescribe = async function({configuration}): Promise<void> {
     });
 }
 
-onexecute = async function({objectName, methodName, parameters, properties, configuration, schema}): Promise<void> {
+onexecute = async function({objectName, methodName, parameters, properties, configuration}): Promise<void> {
     switch (objectName)
     {
-        case AWSS3Bucket: await onexecuteBucket(methodName, properties, parameters, configuration); break;
+        case "AWSS3Bucket": await onexecuteBucket(methodName, properties, parameters, configuration); break;
         // case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
         default: throw new Error("The object " + objectName + " is not supported.");
     }
@@ -144,7 +94,7 @@ onexecute = async function({objectName, methodName, parameters, properties, conf
 async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord, configuration: SingleRecord): Promise<void> {
     switch (methodName)
     {
-        case GetBucketContents: await onexecuteGetBucketContents(parameters, properties, configuration); break;
+        case "GetBucketContents": await onexecuteGetBucketContents(parameters, properties, configuration); break;
         default: throw new Error("The method " + methodName + " is not supported.");
     }
 }
@@ -156,6 +106,12 @@ function onexecuteGetBucketContents(parameters: SingleRecord, properties: Single
         xhr.onreadystatechange = function () {
             try {
                 if (xhr.readyState !== 4) return;
+                
+                if (xhr.status == 400 || xhr.status == 404) {
+                    var obj = JSON.parse(xhr.responseText);
+                    throw new Error(obj.code + ": " + obj.message + " | URL: " + urlValue);
+                }
+                
                 if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
                 //console.log(xhr.responseText);
