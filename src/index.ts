@@ -12,7 +12,7 @@ metadata = {
         "AWSRegion": {
             displayName: "AWS Region",
             type: "string",
-            value: "us-west-2",
+            value: "ex: us-west-2",
             required: true
         },
         "AWSBucketName": {
@@ -101,11 +101,14 @@ async function onexecuteBucket(methodName: string, properties: SingleRecord, par
 
 function onexecuteGetBucketContents(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
+        var urlValue = 'https://' + metadata["configuration"]["AWSBucketName"] + '.s3.' + metadata["configuration"]["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys='
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             try {
-                if (xhr.readyState !== 4) return;
+                if (xhr.readyState !== 4) {
+                    var obj = JSON.parse(xhr.responseText);
+                    throw new Error("Ready State Fail - Failed with status " + xhr.status + " | " + obj.code + ": " + obj.message + " | URL: " + urlValue);
+                }
                 
                 if (xhr.status !== 200) {
                     var obj = JSON.parse(xhr.responseText);
