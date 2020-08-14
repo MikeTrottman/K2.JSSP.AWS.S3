@@ -83,12 +83,45 @@ ondescribe = async function({configuration}): Promise<void> {
 }
 
 onexecute = async function({objectName, methodName, parameters, properties, configuration}): Promise<void> {
-    switch (objectName)
-    {
-        case "AWSS3Bucket": await onexecuteBucket(methodName, properties, parameters, configuration); break;
-        // case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
-        default: throw new Error("The object " + objectName + " is not supported.");
-    }
+    return new Promise<void>((resolve, reject) => {
+        var urlValue = 'https://' + metadata["configuration"]["AWSBucketName"] + '.s3.' + metadata["configuration"]["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys='
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            try {
+                if (xhr.readyState !== 4) {
+                    var obj = JSON.parse(xhr.responseText);
+                    throw new Error("Ready State Fail - Failed with status " + xhr.status + " | " + obj.code + ": " + obj.message + " | URL: " + urlValue);
+                }
+                
+                if (xhr.status !== 200) {
+                    var obj = JSON.parse(xhr.responseText);
+                    throw new Error("Failed with status " + xhr.status + " | " + obj.code + ": " + obj.message + " | URL: " + urlValue);
+                }
+
+                //console.log(xhr.responseText);
+                var obj = JSON.parse(xhr.responseText);
+                postResult(obj.map(x => {
+                    return {
+                        "max-keys": <string> parameters["max-keys"],
+                        "prefix": <string> parameters["prefix"],
+                        "start-after": <string> parameters["start-after"],
+                    }
+                }));
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        }
+
+        xhr.open("GET", urlValue);
+        xhr.send();
+    });
+    // switch (objectName)
+    // {
+    //     case "AWSS3Bucket": await onexecuteBucket(methodName, properties, parameters, configuration); break;
+    //     // case AWSS3File: await onexecuteFile(methodName, properties, parameters); break;
+    //     default: throw new Error("The object " + objectName + " is not supported.");
+    // }
 }
 
 async function onexecuteBucket(methodName: string, properties: SingleRecord, parameters: SingleRecord, configuration: SingleRecord): Promise<void> {
