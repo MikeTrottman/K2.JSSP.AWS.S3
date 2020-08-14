@@ -5,29 +5,29 @@
 import '@k2oss/k2-broker-core';
 
 metadata = {
-    "systemName": "AWS-S3",
-    "displayName": "AWS S3",
-    "description": "Connect to your Amazon Web Services S3 Bucket.",
-    "configuration": {
-        "AWSRegion": {
+    systemName: "AWS-S3",
+    displayName: "AWS S3",
+    description: "Connect to your Amazon Web Services S3 Bucket.",
+    configuration: {
+        AWSRegion: {
             displayName: "AWS Region",
             type: "string",
             value: "ex: us-west-2",
             required: true
         },
-        "AWSBucketName": {
+        AWSBucketName: {
             displayName: "AWS Bucket Name",
             type: "string",
             value: "s3-bucket-name",
             required: true
         },
-        "AWSAccessKey": {
+        AWSAccessKey: {
             displayName: "AWS IAM User Access Key",
             type: "string",
             value: "IAM User Access Key",
             required: true
         },
-        "AWSSecretKey": {
+        AWSSecretKey: {
             displayName: "AWS IAM User Secret Key",
             type: "string",
             value: "IAM User Secret Key",
@@ -84,7 +84,7 @@ ondescribe = async function({configuration}): Promise<void> {
 
 onexecute = async function({objectName, methodName, parameters, properties, configuration}): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = 'https://' + metadata["configuration"]["AWSBucketName"] + '.s3.' + metadata["configuration"]["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys='
+        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2&max-keys='
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             try {
