@@ -94,8 +94,8 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 }
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
+    console.log("urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
     return new Promise<void>((resolve, reject) => {
-        throw new Error("Error on the urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
         try{
         var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2';
         }
