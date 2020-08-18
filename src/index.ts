@@ -1,5 +1,7 @@
 import '@k2oss/k2-broker-core';
 
+console.log('Test of Console Log');
+
 metadata = {
     systemName: "AWS-S3-Bucket",
     displayName: "AWS S3 Bucket",
@@ -31,6 +33,8 @@ metadata = {
         }
     }
 };
+
+console.log("urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
 
 ondescribe = async function ({configuration}): Promise<void> {
     postSchema({
@@ -75,6 +79,7 @@ ondescribe = async function ({configuration}): Promise<void> {
 };
 
 onexecute = async function ({objectName, methodName, parameters, properties, configuration}): Promise<void> {
+    console.log('onexecute');
     switch (objectName) {
         case "posts": await onexecutePosts(methodName, parameters, properties, configuration); break;
         default: throw new Error("The object " + objectName + " is not supported.");
@@ -82,6 +87,7 @@ onexecute = async function ({objectName, methodName, parameters, properties, con
 }
 
 async function onexecutePosts(methodName: string, parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
+    console.log('onexecutePosts');
     switch (methodName) {
         case "getList": await onexecutePostsGetList(parameters, properties, configuration); break;
         case "getById": await onexecutePostsGetById(parameters, properties, configuration); break;
@@ -94,6 +100,7 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 }
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
+    console.log('onexecutePostsGetList');
     console.log("urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
     return new Promise<void>((resolve, reject) => {
         try{
