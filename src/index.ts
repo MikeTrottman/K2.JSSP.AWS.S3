@@ -1,14 +1,33 @@
 import '@k2oss/k2-broker-core';
 
 metadata = {
-    "systemName": "JSONPlaceholder",
-    "displayName": "JSONPlaceholder Broker",
-    "description": "Sample broker for JSONPlaceholder",
+    "systemName": "AWS-S3-Bucket",
+    "displayName": "AWS S3 Bucket",
+    "description": "Connect to your Amazon Web Services S3 Bucket.",
     "configuration": {
-        "ServiceURL": {
-            displayName: "JSONPlaceholder Service URL",
+        "AWSRegion": {
+            displayName: "AWS Region",
             type: "string",
-            value: "https://jsonplaceholder.typicode.com/"
+            value: "us-west-2",
+            required: true
+        },
+        "AWSBucketName": {
+            displayName: "AWS Bucket Name",
+            type: "string",
+            value: "s3-bucket-name",
+            required: true
+        },
+        "AWSAccessKey": {
+            displayName: "AWS IAM User Access Key",
+            type: "string",
+            value: "IAM User Access Key",
+            required: true
+        },
+        "AWSSecretKey": {
+            displayName: "AWS IAM User Secret Key",
+            type: "string",
+            value: "IAM User Secret Key",
+            required: true
         }
     }
 };
@@ -16,65 +35,37 @@ metadata = {
 ondescribe = async function ({configuration}): Promise<void> {
     postSchema({
         objects: {
-            "posts": {
-                displayName: "Posts",
-                description: "Manages Posts",
+            "bucket": {
+                displayName: "Bucket",
+                description: "Get S3 Bucket Contents",
                 properties: {
-                    "id": {
-                        displayName: "ID",
-                        type: "number"
+                    "key": {
+                        displayName: "Key",
+                        type: "string",
                     },
-                    "userId": {
-                        displayName: "User ID",
-                        type: "number"
+                    "lastModified": {
+                        displayName: "Last Modified",
+                        type: "dateTime"
                     },
-                    "title": {
-                        displayName: "Title",
+                    "eTag": {
+                        displayName: "Etag",
                         type: "string"
                     },
-                    "body": {
-                        displayName: "Body",
-                        type: "string"
+                    "size": {
+                        displayName: "Size",
+                        type: "number"
+                    },
+                    "storageClass": {
+                        displayName: "Storage Class",
+                        type: "number"
                     }
                 },
                 methods: {
                     "getList": {
-                        displayName: "Get Posts List",
+                        displayName: "Get List of Bucket Contents",
                         type: "list",
-                        outputs: ["id", "userId", "title", "body"]
-                    },
-                    "getById": {
-                        displayName: "Get Post By ID",
-                        type: "read",
-                        inputs: ["id"],
-                        requiredInputs: ["id"],
-                        outputs: ["id", "userId", "title", "body"]
-                    },
-                    "getByUserId": {
-                        displayName: "Get Posts By User ID",
-                        type: "list",
-                        inputs: ["userId"],
-                        requiredInputs: ["userId"],
-                        outputs: ["id", "userId", "title", "body"]
-                    },
-                    "create": {
-                        displayName: "Create Post",
-                        type: "create",
-                        inputs: ["userId", "title", "body"],
-                        outputs: ["id", "userId", "title", "body"]
-                    },
-                    "update": {
-                        displayName: "Update Post",
-                        type: "update",
-                        inputs: ["id", "userId", "title", "body"],
-                        requiredInputs: ["id"],
-                        outputs: ["id", "userId", "title", "body"]
-                    },
-                    "delete": {
-                        displayName: "Delete Post",
-                        type: "delete",
-                        inputs: ["id"],
-                        requiredInputs: ["id"]
+                        inputs: ["prefix", "max-keys", "start-after"],
+                        outputs: ["key", "lastModified", "eTag", "size", "storageClass"]
                     }
                 }
             }
@@ -104,7 +95,7 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = configuration["ServiceURL"] + 'posts/';
+        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2';
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             try {
@@ -115,10 +106,11 @@ function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecor
                 var obj = JSON.parse(xhr.responseText);
                 postResult(obj.map(x => {
                     return {
-                        "id": x.id,
-                        "userId": x.userId,
-                        "title": x.title,
-                        "body": x.body
+                        "key": x.key,
+                        "lastModified": x.lastModified,
+                        "etag": x.etag,
+                        "size": x.size,
+                        "storageClass": x.storageClass
                     }
                 }));
                 resolve();
