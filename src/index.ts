@@ -1,29 +1,29 @@
 import '@k2oss/k2-broker-core';
 
 metadata = {
-    "systemName": "AWS-S3-Bucket",
-    "displayName": "AWS S3 Bucket",
-    "description": "Connect to your Amazon Web Services S3 Bucket.",
-    "configuration": {
-        "AWSRegion": {
+    systemName: "AWS-S3-Bucket",
+    displayName: "AWS S3 Bucket",
+    description: "Connect to your Amazon Web Services S3 Bucket.",
+    configuration: {
+        AWSRegion: {
             displayName: "AWS Region",
             type: "string",
             value: "us-west-2",
             required: true
         },
-        "AWSBucketName": {
+        AWSBucketName: {
             displayName: "AWS Bucket Name",
             type: "string",
             value: "s3-bucket-name",
             required: true
         },
-        "AWSAccessKey": {
+        AWSAccessKey: {
             displayName: "AWS IAM User Access Key",
             type: "string",
             value: "IAM User Access Key",
             required: true
         },
-        "AWSSecretKey": {
+        AWSSecretKey: {
             displayName: "AWS IAM User Secret Key",
             type: "string",
             value: "IAM User Secret Key",
@@ -95,7 +95,12 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
+        try{
         var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2';
+        }
+        catch (e) {
+            throw new Error("Error on the urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
+        }
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             try {
