@@ -1,6 +1,5 @@
 import '@k2oss/k2-broker-core';
 
-console.log('Test of Console Log');
 
 metadata = {
     systemName: "AWS-S3-Bucket",
@@ -29,8 +28,6 @@ metadata = {
         }
     }
 };
-
-console.log('https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2');
 
 ondescribe = async function ({configuration}): Promise<void> {
     postSchema({
