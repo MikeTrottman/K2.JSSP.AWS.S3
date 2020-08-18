@@ -7,34 +7,30 @@ metadata = {
     displayName: "AWS S3 Bucket",
     description: "Connect to your Amazon Web Services S3 Bucket.",
     configuration: {
-        AWSRegion: {
-            displayName: "AWS Region",
-            type: "string",
-            value: "us-west-2",
-            required: true
+        "AWSRegion": {
+            "displayName": "AWS Region",
+            "type": "string",
+            "required": true
         },
-        AWSBucketName: {
-            displayName: "AWS Bucket Name",
-            type: "string",
-            value: "s3-bucket-name",
-            required: true
+        "AWSBucketName": {
+            "displayName": "AWS Bucket Name",
+            "type": "string",
+            "required": true
         },
-        AWSAccessKey: {
-            displayName: "AWS IAM User Access Key",
-            type: "string",
-            value: "IAM User Access Key",
-            required: true
+        "AWSAccessKey": {
+            "displayName": "AWS IAM User Access Key",
+            "type": "string",
+            "required": true
         },
-        AWSSecretKey: {
-            displayName: "AWS IAM User Secret Key",
-            type: "string",
-            value: "IAM User Secret Key",
-            required: true
+        "AWSSecretKey": {
+            "displayName": "AWS IAM User Secret Key",
+            "type": "string",
+            "required": true
         }
     }
 };
 
-console.log("urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
+console.log('https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2');
 
 ondescribe = async function ({configuration}): Promise<void> {
     postSchema({
@@ -101,10 +97,10 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     console.log('onexecutePostsGetList');
-    console.log("urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
+    console.log('https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2');
     return new Promise<void>((resolve, reject) => {
         try{
-        var urlValue = 'https://' + metadata.configuration.AWSBucketName + '.s3.' + metadata.configuration.AWSRegion + '.amazonaws.com?list-type=2';
+        var urlValue = 'https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2';
         }
         catch (e) {
             throw new Error("Error on the urlValue | AWSBucketName: " + metadata.configuration.AWSBucketName + 'AWSRegion: ' + metadata.configuration.AWSBucketName);
