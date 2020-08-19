@@ -1,32 +1,28 @@
 import '@k2oss/k2-broker-core';
 
 metadata = {
-    systemName: "AWS-S3-Bucket",
-    displayName: "AWS S3 Bucket",
-    description: "Connect to your Amazon Web Services S3 Bucket.",
-    configuration: {
+    "systemName": "AWS-S3-Bucket",
+    "displayName": "AWS S3 Bucket",
+    "description": "Connect to your Amazon Web Services S3 Bucket.",
+    "configuration": {
         "AWSRegion": {
             displayName: "AWS Region",
             type: "string",
-            value: "us-west-2",
             required: true
         },
         "AWSBucketName": {
             displayName: "AWS Bucket Name",
             type: "string",
-            value: "s3-bucket-name",
             required: true
         },
         "AWSAccessKey": {
             displayName: "AWS IAM User Access Key",
             type: "string",
-            value: "IAM User Access Key",
             required: true
         },
         "AWSSecretKey": {
             displayName: "AWS IAM User Secret Key",
             type: "string",
-            value: "IAM User Secret Key",
             required: true
         }
     }
