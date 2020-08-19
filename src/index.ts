@@ -72,7 +72,6 @@ ondescribe = async function ({configuration}): Promise<void> {
 };
 
 onexecute = async function ({objectName, methodName, parameters, properties, configuration}): Promise<void> {
-    console.log('onexecute');
     switch (objectName) {
         case "posts": await onexecutePosts(methodName, parameters, properties, configuration); break;
         default: throw new Error("The object " + objectName + " is not supported.");
@@ -80,7 +79,6 @@ onexecute = async function ({objectName, methodName, parameters, properties, con
 }
 
 async function onexecutePosts(methodName: string, parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
-    console.log('onexecutePosts');
     switch (methodName) {
         case "getList": await onexecutePostsGetList(parameters, properties, configuration); break;
         case "getById": await onexecutePostsGetById(parameters, properties, configuration); break;
@@ -93,9 +91,9 @@ async function onexecutePosts(methodName: string, parameters: SingleRecord, prop
 }
 
 function onexecutePostsGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
-    console.log('onexecutePostsGetList');
-    console.log('https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2');
     return new Promise<void>((resolve, reject) => {
+        console.log('onexecutePostsGetList');
+        console.log('https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2');
         try{
         var urlValue = 'https://' + metadata.configuration['AWSBucketName'] + '.s3.' + metadata.configuration['AWSRegion'] + '.amazonaws.com?list-type=2';
         }
