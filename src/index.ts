@@ -126,7 +126,7 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
 
 function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = 'https://k2-jssp-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
+        var urlValue = 'https://k2-public-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
         var xhr = new XMLHttpRequest();
         console.log('After xhr request is created');
         xhr.onreadystatechange = function () {
@@ -187,7 +187,7 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
 
         //xhr.setRequestHeader('test', 'test value');
         console.log("=== fn "+properties["fileName"]);
-        xhr.open("GET", 'https://k2-jssp-bucket.s3.us-west-2.amazonaws.com/Images/IDontThinkThatMemes.jpg');
+        xhr.open("GET", 'https://k2-public-bucket.s3.us-west-2.amazonaws.com/Images/IDontThinkThatMemes.jpg');
         xhr.responseType = 'blob';
 
         xhr.send();
