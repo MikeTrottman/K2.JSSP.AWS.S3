@@ -102,10 +102,15 @@ ondescribe = async function ({configuration}): Promise<void> {
 };
 
 onexecute = async function ({objectName, methodName, parameters, properties, configuration}): Promise<void> {
-    switch (objectName) {
-        case "bucket": await onexecuteBucket(methodName, parameters, properties, configuration); break;
-        case "file": await onexecuteFile(methodName, properties, parameters); break;
-        default: throw new Error("The object " + objectName + " is not supported.");
+    try{
+        switch (objectName) {
+            case "bucket": await onexecuteBucket(methodName, parameters, properties, configuration); break;
+            case "file": await onexecuteFile(methodName, properties, parameters); break;
+            default: throw new Error("The object " + objectName + " is not supported.");
+        }
+    }
+    catch (e){
+        console.log("Stacktrace: " + e.stack);
     }
 }
 
