@@ -163,6 +163,8 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
             try {
+                console.log("Mike was here testing.");
+                
                 //console.log('=== htk readyState '+ xhr.readyState);
                 //console.log('=== htk status '+ xhr.status);
 
