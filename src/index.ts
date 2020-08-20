@@ -3,29 +3,7 @@ import '@k2oss/k2-broker-core';
 metadata = {
     "systemName": "AWS-S3-Bucket",
     "displayName": "AWS S3 Bucket",
-    "description": "Connect to your Amazon Web Services S3 Bucket.",
-    "configuration": {
-        "AWSRegion": {
-            displayName: "AWS Region",
-            type: "string",
-            required: true
-        },
-        "AWSBucketName": {
-            displayName: "AWS Bucket Name",
-            type: "string",
-            required: true
-        },
-        "AWSAccessKey": {
-            displayName: "AWS IAM User Access Key",
-            type: "string",
-            required: true
-        },
-        "AWSSecretKey": {
-            displayName: "AWS IAM User Secret Key",
-            type: "string",
-            required: true
-        }
-    }
+    "description": "Connect to your Amazon Web Services S3 Bucket."
 };
 
 ondescribe = async function ({configuration}): Promise<void> {
