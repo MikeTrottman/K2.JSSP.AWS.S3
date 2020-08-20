@@ -115,25 +115,41 @@ onexecute = async function ({objectName, methodName, parameters, properties, con
 }
 
 async function onexecuteBucket(methodName: string, parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
-    switch (methodName) {
-        case "getList": await onexecuteBucketGetList(parameters, properties, configuration); break;
-        default: throw new Error("The method " + methodName + " is not supported.");
+    try{
+        switch (methodName) {
+            case "getList": await onexecuteBucketGetList(parameters, properties, configuration); break;
+            default: throw new Error("The method " + methodName + " is not supported.");
+        }
+    }
+    catch (e){
+        console.log("Stacktrace: " + e.stack);
     }
 }
 
 async function onexecuteFile(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
-    switch (methodName)
-    {
-        case "getFile": await onexecuteGetFile(parameters, properties); break;
-        default: throw new Error("The method " + methodName + " is not supported.");
+    try{
+        switch (methodName)
+        {
+            case "getFile": await onexecuteGetFile(parameters, properties); break;
+            default: throw new Error("The method " + methodName + " is not supported.");
+        }
+    }
+    catch (e){
+        console.log("Stacktrace: " + e.stack);
     }
 }
 
 function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        var urlValue = 'https://k2-public-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
-        var xhr = new XMLHttpRequest();
-        console.log('After xhr request is created');
+        try{
+            var urlValue = 'https://k2-public-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
+            var xhr = new XMLHttpRequest();
+            console.log('After xhr request is created');
+        }
+        catch (e){
+            console.log("Stacktrace: " + e.stack);
+        }
+        
         xhr.onreadystatechange = function () {
             try {
                 if (xhr.readyState !== 4) return;
