@@ -92,7 +92,7 @@ ondescribe = async function ({configuration}): Promise<void> {
                         type: "read",
                         inputs: [ "fileName" ],
                         requiredInputs: ["fileName"],
-                        outputs: [ "fileName", "size", "contentType", "content" ]
+                        outputs: [ "fileName", "size", "contentType", "content", "message" ]
                     }
                 }
             }
@@ -110,7 +110,7 @@ onexecute = async function ({objectName, methodName, parameters, properties, con
         }
     }
     catch (e){
-        console.log("Stacktrace: " + e.stack);
+        throw new Error("Stacktrace: " + e.stack);
     }
 }
 
@@ -122,7 +122,7 @@ async function onexecuteBucket(methodName: string, parameters: SingleRecord, pro
         }
     }
     catch (e){
-        console.log("Stacktrace: " + e.stack);
+        throw new Error("Stacktrace: " + e.stack);
     }
 }
 
@@ -135,7 +135,7 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
         }
     }
     catch (e){
-        console.log("Stacktrace: " + e.stack);
+        throw new Error("Stacktrace: " + e.stack);
     }
 }
 
@@ -144,12 +144,14 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
         try{
             var urlValue = 'https://k2-public-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
             var xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+            // xhr.setRequestHeader();
             console.log('After xhr request is created');
         }
         catch (e){
             console.log("Stacktrace: " + e.stack);
         }
-        
+
         xhr.onreadystatechange = function () {
             try {
                 if (xhr.readyState !== 4) return;
@@ -184,7 +186,6 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
             try {
-                console.log("Mike was here testing.");
                 
                 //console.log('=== htk readyState '+ xhr.readyState);
                 //console.log('=== htk status '+ xhr.status);
@@ -200,7 +201,8 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
                     "fileName": properties["fileName"],
                     "size": xhr.getResponseHeader('Content-Length'),
                     "contentType": xhr.getResponseHeader('Content-Type'),
-                    "content": xhr.response
+                    "content": xhr.response,
+                    "message": "Mike put some Static Text here"
                 });
                 resolve();
             } catch (e) {
