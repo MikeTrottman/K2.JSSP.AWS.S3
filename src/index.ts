@@ -92,7 +92,7 @@ ondescribe = async function ({configuration}): Promise<void> {
                         type: "read",
                         inputs: [ "fileName" ],
                         requiredInputs: ["fileName"],
-                        outputs: [ "fileName", "size", "contentType", "content", "message" ]
+                        outputs: [ "fileName", "size", "contentType", "content" ]
                     }
                 }
             }
@@ -142,10 +142,8 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
 function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         try{
-            var urlValue = 'https://k2-public-bucket.s3.us-west-2.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1';
             var xhr = new XMLHttpRequest();
             xhr.withCredentials = true;
-            // xhr.setRequestHeader();
             console.log('After xhr request is created');
         }
         catch (e){
@@ -174,11 +172,49 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
             }
         }
 
-        xhr.open("GET", urlValue);
+        var amzDate = getAmzDate(new Date().toISOString());
+        var authDate = amzDate.split("T")[0];
+
+        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1');
+        
+        xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
+        xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
+        xhr.setRequestHeader("X-Amz-Date", amzDate);
+        xhr.setRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=" + configuration["AWSAccessKey"] + "/" + authDate + "/" + configuration["AWSRegion"] + "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + getSignatureKey(configuration, dateString));
+        
         xhr.send();
     });
 
 }
+
+function getAmzDate(dateStr) {
+    var chars = [":","-"];
+    for (var i=0;i<chars.length;i++) {
+        while (dateStr.indexOf(chars[i]) != -1) {
+            dateStr = dateStr.replace(chars[i],"");
+        }
+    }
+    dateStr = dateStr.split(".")[0] + "Z";
+    return dateStr;
+}
+
+function getPayload(payload) {
+    var crypto = require("crypto-js");
+
+    return crypto.SHA256(payload).toString(payload);
+}
+
+function getSignatureKey(configuration, dateString) {
+    
+    var crypto = require("crypto-js");
+
+    var kDate = crypto.HmacSHA256(dateString, "AWS4" + configuration["AWSSecretKey"]);
+    var kRegion = crypto.HmacSHA256(configuration["AWSRegion"], kDate);
+    var kService = crypto.HmacSHA256('s3', kRegion);
+    var kSigning = crypto.HmacSHA256("aws4_request", kService);
+    return kSigning;
+}
+
 function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) =>
     {
@@ -201,8 +237,7 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
                     "fileName": properties["fileName"],
                     "size": xhr.getResponseHeader('Content-Length'),
                     "contentType": xhr.getResponseHeader('Content-Type'),
-                    "content": xhr.response,
-                    "message": "Mike put some Static Text here"
+                    "content": xhr.response
                 });
                 resolve();
             } catch (e) {
