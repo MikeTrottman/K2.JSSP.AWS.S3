@@ -156,16 +156,8 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
                 if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
                 //console.log(xhr.responseText);
-                var obj = JSON.parse(xhr.responseText);
-                postResult(obj.map(x => {
-                    return {
-                        "key": x.key,
-                        "lastModified": x.lastModified,
-                        "etag": x.etag,
-                        "size": x.size,
-                        "storageClass": x.storageClass
-                    }
-                }));
+                var obj = JSON.parse(xhr.response);
+                postResult(obj);
                 resolve();
             } catch (e) {
                 reject(e);
@@ -181,6 +173,7 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
         xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
         xhr.setRequestHeader("X-Amz-Date", amzDate);
         xhr.setRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=" + configuration["AWSAccessKey"] + "/" + authDate + "/" + configuration["AWSRegion"] + "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + getSignatureKey(configuration, dateString));
+        xhr.responseType = 'json';
         
         xhr.send();
     });
