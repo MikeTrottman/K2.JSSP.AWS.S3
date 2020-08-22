@@ -180,7 +180,7 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
         xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
         xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
         xhr.setRequestHeader("X-Amz-Date", amzDate);
-        xhr.setRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=" + configuration["AWSAccessKey"] + "/" + authDate + "/" + configuration["AWSRegion"] + "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + getSignatureKey(configuration, dateString));
+        xhr.setRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=" + configuration["AWSAccessKey"] + "/" + authDate + "/" + configuration["AWSRegion"] + "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + getSignatureKey(configuration, authDate));
         xhr.responseType = 'json';
         
         xhr.send();
