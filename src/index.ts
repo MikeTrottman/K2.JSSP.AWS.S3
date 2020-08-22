@@ -156,8 +156,16 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
                 if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
                 //console.log(xhr.responseText);
-                var obj = JSON.parse(xhr.response);
-                postResult(obj);
+                var obj = JSON.parse(xhr.responseText);
+                postResult(obj.map(x => {
+                    return {
+                        "key": x.ListBucketResult.Contents.Key,
+                        "lastModified": x.ListBucketResult.Contents.LastModified,
+                        "etag": x.ListBucketResult.Contents.Etag,
+                        "size": x.ListBucketResult.Contents.Size,
+                        "storageClass": x.ListBucketResult.Contents.StorageClass
+                    }
+                }));
                 resolve();
             } catch (e) {
                 reject(e);
