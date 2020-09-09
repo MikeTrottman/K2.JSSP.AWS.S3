@@ -144,7 +144,6 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
         try{
             var xhr = new XMLHttpRequest();
             xhr.withCredentials = true;
-            console.log('After xhr request is created');
         }
         catch (e){
             console.log("Stacktrace: " + e.stack);
@@ -155,7 +154,12 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
                 if (xhr.readyState !== 4) return;
                 if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
-                //console.log(xhr.responseText);
+                //Debug
+                console.log('-----------------------');
+                console.log('xhr.status: ' + xhr.status);
+                console.log('xhr.responseText: ' + xhr.responseText);
+                console.log('-----------------------');
+
                 var obj = JSON.parse(xhr.responseText);
                 postResult(obj.map(x => {
                     return {
@@ -175,17 +179,32 @@ function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleReco
         var amzDate = getAmzDate(new Date().toISOString());
         var authDate = amzDate.split("T")[0];
 
-        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys=50&prefix=Image&start-after=1');
+        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys=50&prefix=Images&start-after=1');
         
+        // Option 1 per AWS Documentation
         xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
-        xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
+        xhr.setRequestHeader("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
         xhr.setRequestHeader("X-Amz-Date", amzDate);
-        xhr.setRequestHeader("Authorization", "AWS4-HMAC-SHA256 Credential=" + configuration["AWSAccessKey"] + "/" + authDate + "/" + configuration["AWSRegion"] + "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + getSignatureKey(configuration, authDate));
-        xhr.responseType = 'json';
-        
+        xhr.setRequestHeader("X-Amz-Credential", configuration['AWSAccessKey'] + "/" + authDate + "/s3/" + configuration["AWSRegion"]);
+        xhr.setRequestHeader("X-Amz-Signature", getSignatureKey(configuration, authDate));
+        xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
+
+        // Option 2 - More like Postman
+        // xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
+        // xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
+        // xhr.setRequestHeader("X-Amz-Date", amzDate);
+        // xhr.setRequestHeader("Authorization", 
+        //     "AWS4-HMAC-SHA256 Credential=" + 
+        //     configuration["AWSAccessKey"] + "/" + 
+        //     authDate + "/" + 
+        //     configuration["AWSRegion"] + 
+        //     "/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=" + 
+        //     getSignatureKey(configuration, authDate));
+
         xhr.send();
     });
 
+            // "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + 
 }
 
 function getAmzDate(dateStr) {
@@ -196,6 +215,7 @@ function getAmzDate(dateStr) {
         }
     }
     dateStr = dateStr.split(".")[0] + "Z";
+    console.log('dateStr: ' + dateStr);
     return dateStr;
 }
 
