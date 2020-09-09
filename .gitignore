@@ -61,4 +61,8 @@ typings/
 .vs
 
 # Build Results
-#dist/
+dist/
+
+# Tests
+test.js
+test.js.map
