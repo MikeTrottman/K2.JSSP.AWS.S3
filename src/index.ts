@@ -139,120 +139,65 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
     }
 }
 
-function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-        try{
-            var xhr = new XMLHttpRequest();
-            xhr.withCredentials = true;
-        }
-        catch (e){
-            console.log("Stacktrace: " + e.stack);
-        }
+async function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord) {
 
-        xhr.onreadystatechange = function () {
-            try {
-                if (xhr.readyState !== 4) return;
-                if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
+    try{
+        var bucketItemsList = await getBucketListItems(configuration);
 
-                //Debug
-                console.log('-----------------------');
-                console.log('xhr.status: ' + xhr.status);
-                console.log('xhr.responseText: ' + xhr.responseText);
-                console.log('-----------------------');
+        console.log('BucketItemsList: ', bucketItemsList);
 
-                var obj = JSON.parse(xhr.responseText);
-                postResult(obj.map(x => {
-                    return {
-                        "key": x.ListBucketResult.Contents.Key,
-                        "lastModified": x.ListBucketResult.Contents.LastModified,
-                        "etag": x.ListBucketResult.Contents.Etag,
-                        "size": x.ListBucketResult.Contents.Size,
-                        "storageClass": x.ListBucketResult.Contents.StorageClass
-                    }
-                }));
-                resolve();
-            } catch (e) {
-                reject(e);
-            }
-        }
+        var obj:any = bucketItemsList;
+        var result = postResult({
+            'Key': obj.Key,
+            'LastModified': obj.LastModified,
+            'ETag': obj.ETag,
+            'Size': obj.Size,
+            'StorageClass': obj.StorageClass,
+        });
+        console.log('BucketItemsList: ', bucketItemsList);
 
-        var amzDate = getAmzDate(new Date().toISOString());
-        var authDate = amzDate.split("T")[0];
-
-        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys=50&prefix=Images&start-after=1');
-        
-        // Option 1 per AWS Documentation
-        xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
-        xhr.setRequestHeader("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
-        xhr.setRequestHeader("X-Amz-Date", amzDate);
-        xhr.setRequestHeader("X-Amz-Credential", configuration['AWSAccessKey'] + "/" + authDate + "/s3/" + configuration["AWSRegion"]);
-        xhr.setRequestHeader("X-Amz-Signature", getSignatureKey(configuration, authDate));
-        xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
-
-        // Option 2 - More like Postman
-        // xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
-        // xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
-        // xhr.setRequestHeader("X-Amz-Date", amzDate);
-        // xhr.setRequestHeader("Authorization", 
-        //     "AWS4-HMAC-SHA256 Credential=" + 
-        //     configuration["AWSAccessKey"] + "/" + 
-        //     authDate + "/" + 
-        //     configuration["AWSRegion"] + 
-        //     "/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=" + 
-        //     getSignatureKey(configuration, authDate));
-
-        xhr.send();
-    });
-
-            // "/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=" + 
-}
-
-function getAmzDate(dateStr) {
-    var chars = [":","-"];
-    for (var i=0;i<chars.length;i++) {
-        while (dateStr.indexOf(chars[i]) != -1) {
-            dateStr = dateStr.replace(chars[i],"");
-        }
     }
-    dateStr = dateStr.split(".")[0] + "Z";
-    console.log('dateStr: ' + dateStr);
-    return dateStr;
-}
-
-function getPayload(payload) {
-    var crypto = require("crypto-js");
-
-    return crypto.SHA256(payload).toString(payload);
-}
-
-function getSignatureKey(configuration, dateString) {
+    catch (e) {
+        console.log('Error: ', e);
+    }
     
-    var crypto = require("crypto-js");
-
-    var kDate = crypto.HmacSHA256(dateString, "AWS4" + configuration["AWSSecretKey"]);
-    var kRegion = crypto.HmacSHA256(configuration["AWSRegion"], kDate);
-    var kService = crypto.HmacSHA256('s3', kRegion);
-    var kSigning = crypto.HmacSHA256("aws4_request", kService);
-    return kSigning;
+    return result;
+    
 }
+
+async function getBucketListItems(configuration): Promise<void> {
+    try {
+        var aws = require('aws-sdk');
+        aws.config.setPromisesDependency();
+        aws.config.update({
+            accessKeyId: configuration['AWSAccessKey'],
+            secretAccessKey: configuration["AWSSecretKey"],
+            region: configuration["AWSRegion"]
+        });
+
+        var s3 = new aws.S3();
+
+        var bucketItems = await s3.listObjectsV2({
+            Bucket: configuration['AWSBucketName']
+        }).promise();
+
+        console.log('BucketItems: ', bucketItems);
+    } catch (e) {
+        console.log('Error getBucketListItems: ', e);
+    }
+    return bucketItems.Contents;
+}
+
 
 function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) =>
     {
-        console.log('===htk in onexecuteGetFile');
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
             try {
-                
-                //console.log('=== htk readyState '+ xhr.readyState);
-                //console.log('=== htk status '+ xhr.status);
 
                 if (xhr.readyState !== 4) return;
                 if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
-
-                console.log('=== hdr '+xhr.getResponseHeader('Content-Type'));
-                console.log('=== len '+xhr.getResponseHeader('Content-Length'));
-                console.log('===  file '+ xhr.response);
 
                 postResult({
                     "fileName": properties["fileName"],
@@ -265,9 +210,7 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
                 reject(e);
             }
         };
-
-        //xhr.setRequestHeader('test', 'test value');
-        console.log("=== fn "+properties["fileName"]);
+        
         xhr.open("GET", 'https://k2-public-bucket.s3.us-west-2.amazonaws.com/Images/IDontThinkThatMemes.jpg');
         xhr.responseType = 'blob';
 
