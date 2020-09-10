@@ -64,7 +64,4 @@ typings/
 dist/
 
 # Tests
-src/test.ts
-dist/test.js
-dist/test.js.map
 package-lock.json

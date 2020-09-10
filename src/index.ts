@@ -1,5 +1,14 @@
 import '@k2oss/k2-broker-core';
 
+// NOTE: Currently (September 10th, 2020), K2 Nexus does not allow you to add dependencies to package.json.
+// This means we can't use npm aws-sdk. This also means we can't do this with the exampled xhr based method
+// since we would need to import crypto-js to generate the signature. Below is what I think is the closest thing
+// to a working example using xhr, however the restulting query comes back with an "Access Denied" response regardless
+// of the CORS or permissions settings in the S3 Bucket. As long as the bucket is not publicly accessable, then
+// we cannot access AWS S3 resources as of yet. I'm leaving this where if we have an update to K2 JSSP in the future
+// we can pick up with the code from there.
+// TLDR: This don't work, maybe try again later.
+
 metadata = {
     "systemName": "AWS-S3-Bucket",
     "displayName": "AWS S3 Bucket",
@@ -105,7 +114,7 @@ onexecute = async function ({objectName, methodName, parameters, properties, con
     try{
         switch (objectName) {
             case "bucket": await onexecuteBucket(methodName, parameters, properties, configuration); break;
-            case "file": await onexecuteFile(methodName, properties, parameters); break;
+            case "file": await onexecuteFile(methodName, properties, parameters, configuration); break;
             default: throw new Error("The object " + objectName + " is not supported.");
         }
     }
@@ -126,11 +135,11 @@ async function onexecuteBucket(methodName: string, parameters: SingleRecord, pro
     }
 }
 
-async function onexecuteFile(methodName: string, properties: SingleRecord, parameters: SingleRecord): Promise<void> {
+async function onexecuteFile(methodName: string, properties: SingleRecord, parameters: SingleRecord, configuration: SingleRecord): Promise<void> {
     try{
         switch (methodName)
         {
-            case "getFile": await onexecuteGetFile(parameters, properties); break;
+            case "getFile": await onexecuteGetFile(parameters, properties, configuration); break;
             default: throw new Error("The method " + methodName + " is not supported.");
         }
     }
@@ -139,57 +148,87 @@ async function onexecuteFile(methodName: string, properties: SingleRecord, param
     }
 }
 
-async function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord) {
+function onexecuteBucketGetList(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord) {
+    return new Promise<void>((resolve, reject) => {
+        try{
+            var xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+        }
+        catch (e){
+            console.log("Stacktrace: " + e.stack);
+        }
 
-    try{
-        var bucketItemsList = await getBucketListItems(configuration);
+        xhr.onreadystatechange = function () {
+            try {
+                if (xhr.readyState !== 4) return;
+                if (xhr.status !== 200) throw new Error("Failed with status " + xhr.status);
 
-        console.log('BucketItemsList: ', bucketItemsList);
+                var obj = JSON.parse(xhr.responseText);
+                postResult(obj.map(x => {
+                    return {
+                        "key": x.ListBucketResult.Contents.Key,
+                        "lastModified": x.ListBucketResult.Contents.LastModified,
+                        "etag": x.ListBucketResult.Contents.Etag,
+                        "size": x.ListBucketResult.Contents.Size,
+                        "storageClass": x.ListBucketResult.Contents.StorageClass
+                    }
+                }));
+                resolve();
+            } catch (e) {
+                reject(e);
+            }
+        }
 
-        var obj:any = bucketItemsList;
-        var result = postResult({
-            'Key': obj.Key,
-            'LastModified': obj.LastModified,
-            'ETag': obj.ETag,
-            'Size': obj.Size,
-            'StorageClass': obj.StorageClass,
-        });
-        console.log('BucketItemsList: ', bucketItemsList);
+        var amzDate = getAmzDate(new Date().toISOString());
+        var authDate = amzDate.split("T")[0];
 
-    }
-    catch (e) {
-        console.log('Error: ', e);
-    }
-    
-    return result;
-    
+        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com?list-type=2&max-keys=50&prefix=Images&start-after=1');
+        
+        //Apply these headers to the request. Note that these headers will be different then what you may see in Postman. Those results are likely using aws-sdk.
+        xhr.setRequestHeader("host", configuration["AWSBucketName"] + ".s3.amazonaws.com");
+        xhr.setRequestHeader("X-Amz-Algorithm", "AWS4-HMAC-SHA256");
+        xhr.setRequestHeader("X-Amz-Date", amzDate);
+        xhr.setRequestHeader("X-Amz-Credential", configuration['AWSAccessKey'] + "/" + authDate + "/s3/" + configuration["AWSRegion"]);
+        xhr.setRequestHeader("X-Amz-Signature", getSignatureKey(configuration, authDate));
+        xhr.setRequestHeader("X-Amz-Content-Sha256", getPayload(''));
+
+        xhr.send();
+    }); 
 }
 
-async function getBucketListItems(configuration): Promise<void> {
-    try {
-        var aws = require('aws-sdk');
-        aws.config.setPromisesDependency();
-        aws.config.update({
-            accessKeyId: configuration['AWSAccessKey'],
-            secretAccessKey: configuration["AWSSecretKey"],
-            region: configuration["AWSRegion"]
-        });
-
-        var s3 = new aws.S3();
-
-        var bucketItems = await s3.listObjectsV2({
-            Bucket: configuration['AWSBucketName']
-        }).promise();
-
-        console.log('BucketItems: ', bucketItems);
-    } catch (e) {
-        console.log('Error getBucketListItems: ', e);
+//Get the date in the format Amazon requests
+function getAmzDate(dateStr) {
+    var chars = [":","-"];
+    for (var i=0;i<chars.length;i++) {
+        while (dateStr.indexOf(chars[i]) != -1) {
+            dateStr = dateStr.replace(chars[i],"");
+        }
     }
-    return bucketItems.Contents;
+    dateStr = dateStr.split(".")[0] + "Z";
+    console.log('dateStr: ' + dateStr);
+    return dateStr;
 }
 
+//Encrypt the Payload for the request
+function getPayload(payload) {
+    var crypto = require("crypto-js");
 
-function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): Promise<void> {
+    return crypto.SHA256(payload).toString(payload);
+}
+
+//Sign the key according to Amazon's documentation
+function getSignatureKey(configuration, dateString) {
+    
+    var crypto = require("crypto-js");
+
+    var kDate = crypto.HmacSHA256(dateString, "AWS4" + configuration["AWSSecretKey"]);
+    var kRegion = crypto.HmacSHA256(configuration["AWSRegion"], kDate);
+    var kService = crypto.HmacSHA256('s3', kRegion);
+    var kSigning = crypto.HmacSHA256("aws4_request", kService);
+    return kSigning;
+}
+
+function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord, configuration: SingleRecord): Promise<void> {
     return new Promise<void>((resolve, reject) =>
     {
         var xhr = new XMLHttpRequest();
@@ -210,8 +249,8 @@ function onexecuteGetFile(parameters: SingleRecord, properties: SingleRecord): P
                 reject(e);
             }
         };
-        
-        xhr.open("GET", 'https://k2-public-bucket.s3.us-west-2.amazonaws.com/Images/IDontThinkThatMemes.jpg');
+
+        xhr.open("GET", 'https://' + configuration["AWSBucketName"] + '.s3.' + configuration["AWSRegion"] + '.amazonaws.com');
         xhr.responseType = 'blob';
 
         xhr.send();
