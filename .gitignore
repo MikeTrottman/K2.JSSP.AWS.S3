@@ -66,3 +66,7 @@ dist/
 # Tests
 test.js
 test.js.map
+dist/test.js
+dist/test.js.map
+src/test.ts
+package-lock.json
